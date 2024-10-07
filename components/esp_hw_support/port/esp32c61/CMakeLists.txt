@@ -17,10 +17,9 @@ if(NOT BOOTLOADER_BUILD)
 
 endif()
 
-# TODO: [ESP32C61] IDF-9250
+# TODO: [ESP32C61] IDF-9304
 if(CONFIG_IDF_TARGET_ESP32C61)
     list(REMOVE_ITEM srcs
-        "pmu_sleep.c"
         "sar_periph_ctrl.c"
     )
 endif()

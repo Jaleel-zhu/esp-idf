@@ -19,10 +19,12 @@
 #include "bootloader_init.h"
 #include "hal/mmu_hal.h"
 #include "hal/mmu_ll.h"
+#include "hal/spimem_flash_ll.h"
 #include "hal/cache_hal.h"
 #include "hal/cache_ll.h"
+#include "esp_private/bootloader_flash_internal.h"
 
-void IRAM_ATTR bootloader_flash_update_id()
+void IRAM_ATTR bootloader_flash_update_id(void)
 {
     esp_rom_spiflash_chip_t *chip = &rom_spiflash_legacy_data->chip;
     chip->device_id = bootloader_read_flash_id();
@@ -33,15 +35,23 @@ void bootloader_flash_update_size(uint32_t size)
     rom_spiflash_legacy_data->chip.chip_size = size;
 }
 
-void IRAM_ATTR bootloader_flash_cs_timing_config()
+void IRAM_ATTR bootloader_flash_cs_timing_config(void)
 {
     SET_PERI_REG_MASK(SPI_MEM_C_USER_REG, SPI_MEM_C_CS_HOLD_M | SPI_MEM_C_CS_SETUP_M);
     SET_PERI_REG_BITS(SPI_MEM_C_CTRL2_REG, SPI_MEM_C_CS_HOLD_TIME_V, 0, SPI_MEM_C_CS_HOLD_TIME_S);
     SET_PERI_REG_BITS(SPI_MEM_C_CTRL2_REG, SPI_MEM_C_CS_SETUP_TIME_V, 0, SPI_MEM_C_CS_SETUP_TIME_S);
 }
 
+void IRAM_ATTR bootloader_init_mspi_clock(void)
+{
+    _spimem_flash_ll_select_clk_source(0, FLASH_CLK_SRC_SPLL);
+    _spimem_ctrlr_ll_set_core_clock(0, 6);
+}
+
 void IRAM_ATTR bootloader_flash_clock_config(const esp_image_header_t *pfhdr)
 {
+    bootloader_init_mspi_clock();
+
     uint32_t spi_clk_div = 0;
     switch (pfhdr->spi_speed) {
     case ESP_IMAGE_SPI_SPEED_DIV_1:
@@ -66,12 +76,12 @@ static const char *TAG = "boot.esp32p4";
 
 void IRAM_ATTR bootloader_configure_spi_pins(int drv)
 {
-    uint8_t clk_gpio_num = SPI_CLK_GPIO_NUM;
-    uint8_t q_gpio_num   = SPI_Q_GPIO_NUM;
-    uint8_t d_gpio_num   = SPI_D_GPIO_NUM;
-    uint8_t cs0_gpio_num = SPI_CS0_GPIO_NUM;
-    uint8_t hd_gpio_num  = SPI_HD_GPIO_NUM;
-    uint8_t wp_gpio_num  = SPI_WP_GPIO_NUM;
+    uint8_t clk_gpio_num = MSPI_IOMUX_PIN_NUM_CLK;
+    uint8_t q_gpio_num   = MSPI_IOMUX_PIN_NUM_MISO;
+    uint8_t d_gpio_num   = MSPI_IOMUX_PIN_NUM_MOSI;
+    uint8_t cs0_gpio_num = MSPI_IOMUX_PIN_NUM_CS0;
+    uint8_t hd_gpio_num  = MSPI_IOMUX_PIN_NUM_HD;
+    uint8_t wp_gpio_num  = MSPI_IOMUX_PIN_NUM_WP;
     esp_rom_gpio_pad_set_drv(clk_gpio_num, drv);
     esp_rom_gpio_pad_set_drv(q_gpio_num,   drv);
     esp_rom_gpio_pad_set_drv(d_gpio_num,   drv);

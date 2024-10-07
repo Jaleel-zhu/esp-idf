@@ -6,8 +6,10 @@
 
 #include "esp_check.h"
 #include "esp_clk_tree.h"
+#include "esp_private/esp_clk_tree_common.h"
 #include "esp_private/gptimer.h"
 #include "gptimer_priv.h"
+#include "soc/soc_caps.h"
 
 static const char *TAG = "gptimer";
 
@@ -85,7 +87,7 @@ gptimer_group_t *gptimer_acquire_group_handle(int group_id)
             }
         }
 #if GPTIMER_USE_RETENTION_LINK
-        sleep_retention_module_t module = TIMER_LL_SLEEP_RETENTION_MODULE_ID(group_id);
+        sleep_retention_module_t module = tg_timer_reg_retention_info[group_id].module;
         sleep_retention_module_init_param_t init_param = {
             .cbs = {
                 .create = {
@@ -196,6 +198,7 @@ esp_err_t gptimer_select_periph_clock(gptimer_t *timer, gptimer_clock_source_t s
     }
 #endif // CONFIG_PM_ENABLE
 
+    esp_clk_tree_enable_src((soc_module_clk_t)src_clk, true);
     // !!! HARDWARE SHARED RESOURCE !!!
     // on some ESP chip, different peripheral's clock source setting are mixed in the same register
     // so we need to make this done in an atomic way

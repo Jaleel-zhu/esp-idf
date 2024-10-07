@@ -33,6 +33,9 @@ extern const uint8_t GPIO_PIN_MUX_REG_OFFSET[SOC_GPIO_PIN_COUNT];
 // Get GPIO hardware instance with giving gpio num
 #define GPIO_LL_GET_HW(num) (((num) == 0) ? (&GPIO) : NULL)
 
+// the gpio matrix signal routing const time
+#define GPIO_LL_MATRIX_DELAY_NS       25
+
 #define GPIO_LL_APP_CPU_INTR_ENA      (BIT(0))
 #define GPIO_LL_APP_CPU_NMI_INTR_ENA  (BIT(1))
 #define GPIO_LL_PRO_CPU_INTR_ENA      (BIT(2))
@@ -373,10 +376,6 @@ static inline void gpio_ll_output_disable(gpio_dev_t *hw, uint32_t gpio_num)
     } else {
         HAL_FORCE_MODIFY_U32_REG_FIELD(hw->enable1_w1tc, data, (0x1 << (gpio_num - 32)));
     }
-
-    // Ensure no other output signal is routed via GPIO matrix to this pin
-    REG_WRITE(GPIO_FUNC0_OUT_SEL_CFG_REG + (gpio_num * 4),
-              SIG_GPIO_OUT_IDX);
 }
 
 /**
@@ -460,6 +459,18 @@ static inline void gpio_ll_od_disable(gpio_dev_t *hw, uint32_t gpio_num)
 static inline void gpio_ll_od_enable(gpio_dev_t *hw, uint32_t gpio_num)
 {
     hw->pin[gpio_num].pad_driver = 1;
+}
+
+/**
+ * @brief Disconnect any peripheral output signal routed via GPIO matrix to the pin
+ *
+ * @param  hw Peripheral GPIO hardware instance address.
+ * @param  gpio_num GPIO number
+ */
+__attribute__((always_inline))
+static inline void gpio_ll_matrix_out_default(gpio_dev_t *hw, uint32_t gpio_num)
+{
+    REG_WRITE(GPIO_FUNC0_OUT_SEL_CFG_REG + (gpio_num * 4), SIG_GPIO_OUT_IDX);
 }
 
 /**

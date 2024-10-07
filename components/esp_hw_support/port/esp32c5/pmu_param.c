@@ -293,6 +293,7 @@ const pmu_hp_system_analog_param_t * pmu_hp_system_analog_param_default(pmu_hp_m
     }, \
     .backup_clk = (                       \
         BIT(PMU_ICG_FUNC_ENA_REGDMA)    | \
+        BIT(PMU_ICG_FUNC_ENA_GDMA)      | \
         BIT(PMU_ICG_FUNC_ENA_TG0)       | \
         BIT(PMU_ICG_FUNC_ENA_TG1)       | \
         BIT(PMU_ICG_FUNC_ENA_HPBUS)     | \
@@ -390,7 +391,7 @@ const pmu_hp_system_retention_param_t * pmu_hp_system_retention_param_default(pm
 
 #define PMU_LP_SLEEP_POWER_CONFIG_DEFAULT() { \
     .dig_power = {              \
-        .mem_dslp       = 1,    \
+        .mem_dslp       = 0,    \
         .peri_pd_en     = 0,    \
     }, \
     .clk_power = {              \

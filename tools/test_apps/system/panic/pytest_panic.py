@@ -26,6 +26,7 @@ TARGETS_XTENSA = TARGETS_XTENSA_SINGLE_CORE + TARGETS_XTENSA_DUAL_CORE
 TARGETS_RISCV_SINGLE_CORE = [
     pytest.mark.esp32c2,
     pytest.mark.esp32c3,
+    pytest.mark.esp32c5,
     pytest.mark.esp32c6,
     pytest.mark.esp32h2,
 ]
@@ -49,11 +50,13 @@ TARGETS_DUAL_CORE = TARGETS_XTENSA_DUAL_CORE + TARGETS_RISCV_DUAL_CORE
 CONFIGS = [
     pytest.param('coredump_flash_bin_crc', marks=TARGETS_ALL),
     pytest.param('coredump_flash_elf_sha', marks=TARGETS_ALL),
+    pytest.param('coredump_flash_elf_soft_sha', marks=TARGETS_ALL),
     pytest.param('coredump_uart_bin_crc', marks=TARGETS_ALL),
     pytest.param('coredump_uart_elf_crc', marks=TARGETS_ALL),
     pytest.param('coredump_flash_custom_stack', marks=TARGETS_RISCV),
-    pytest.param('gdbstub', marks=TARGETS_ALL),
-    pytest.param('panic', marks=TARGETS_ALL),
+    # TODO: Move esp32c61 to TARGETS_RISCV once Core Dump is supported (IDF-9268)
+    pytest.param('gdbstub', marks=TARGETS_ALL + [pytest.mark.esp32c61]),
+    pytest.param('panic', marks=TARGETS_ALL + [pytest.mark.esp32c61]),
 ]
 
 CONFIGS_DUAL_CORE = [
@@ -82,6 +85,7 @@ CONFIGS_HW_STACK_GUARD = [
     pytest.param('coredump_flash_bin_crc', marks=TARGETS_RISCV),
     pytest.param('coredump_uart_bin_crc', marks=TARGETS_RISCV),
     pytest.param('coredump_uart_elf_crc', marks=TARGETS_RISCV),
+    # TODO: Add stack guard support to the ESP32-C61: IDF-9269
     pytest.param('gdbstub', marks=TARGETS_RISCV),
     pytest.param('panic', marks=TARGETS_RISCV),
 ]
@@ -111,9 +115,20 @@ def get_default_backtrace(config: str) -> List[str]:
     return [config, 'app_main', 'main_task', 'vPortTaskWrapper']
 
 
+def expect_coredump_flash_write_logs(dut: PanicTestDut, config: str) -> None:
+    dut.expect_exact('Save core dump to flash...')
+    if 'extram_stack' in config:
+        dut.expect_exact('Backing up stack @')
+        dut.expect_exact('Restoring stack')
+    dut.expect_exact('Core dump has been saved to flash.')
+    dut.expect('Rebooting...')
+
+
 def common_test(dut: PanicTestDut, config: str, expected_backtrace: Optional[List[str]] = None, check_cpu_reset: Optional[bool] = True,
                 expected_coredump: Optional[Sequence[Union[str, Pattern[Any]]]] = None) -> None:
     if 'gdbstub' in config:
+        if 'coredump' in config:
+            dut.process_coredump_uart(expected_coredump, False)
         dut.expect_exact('Entering gdb stub now.')
         dut.start_gdb_for_gdbstub()
         frames = dut.gdb_backtrace()
@@ -129,11 +144,10 @@ def common_test(dut: PanicTestDut, config: str, expected_backtrace: Optional[Lis
     if 'uart' in config:
         dut.process_coredump_uart(expected_coredump)
     elif 'flash' in config:
+        expect_coredump_flash_write_logs(dut, config)
         dut.process_coredump_flash(expected_coredump)
     elif 'panic' in config:
-        pass
-
-    dut.expect('Rebooting...', timeout=60)
+        dut.expect('Rebooting...', timeout=60)
 
     if check_cpu_reset:
         dut.expect_cpu_reset()
@@ -218,13 +232,6 @@ def test_panic_extram_stack(dut: PanicTestDut, config: str) -> None:
     dut.expect_none('Guru Meditation')
     dut.expect_backtrace()
     dut.expect_elf_sha256()
-    # Check that coredump is getting written to flash
-    dut.expect_exact('Save core dump to flash...')
-    # And that the stack is replaced and restored
-    dut.expect_exact('Backing up stack @')
-    dut.expect_exact('Restoring stack')
-    # The caller must be accessible after restoring the stack
-    dut.expect_exact('Core dump has been saved to flash.')
 
     if dut.target == 'esp32':
         # ESP32 External data memory range [0x3f800000-0x3fc00000)
@@ -622,13 +629,14 @@ def test_panic_delay(dut: PanicTestDut) -> None:
 #########################
 
 # Memprot-related tests are supported only on targets with PMS/PMA peripheral;
-# currently ESP32-S2, ESP32-C3, ESP32-C2, ESP32-H2, ESP32-C6, ESP32-P4 and ESP32-C5 are supported
+# currently ESP32-S2, ESP32-C3, ESP32-C2, ESP32-H2, ESP32-C6, ESP32-P4, ESP32-C5 and ESP32-C61 are supported
 CONFIGS_MEMPROT_IDRAM = [
     pytest.param('memprot_esp32s2', marks=[pytest.mark.esp32s2]),
     pytest.param('memprot_esp32c3', marks=[pytest.mark.esp32c3]),
     pytest.param('memprot_esp32c2', marks=[pytest.mark.esp32c2]),
     pytest.param('memprot_esp32c5', marks=[pytest.mark.esp32c5]),
     pytest.param('memprot_esp32c6', marks=[pytest.mark.esp32c6]),
+    pytest.param('memprot_esp32c61', marks=[pytest.mark.esp32c61]),
     pytest.param('memprot_esp32h2', marks=[pytest.mark.esp32h2]),
     pytest.param('memprot_esp32p4', marks=[pytest.mark.esp32p4])
 ]
@@ -653,6 +661,7 @@ CONFIGS_MEMPROT_RTC_SLOW_MEM = [
 CONFIGS_MEMPROT_FLASH_IDROM = [
     pytest.param('memprot_esp32c5', marks=[pytest.mark.esp32c5]),
     pytest.param('memprot_esp32c6', marks=[pytest.mark.esp32c6]),
+    pytest.param('memprot_esp32c61', marks=[pytest.mark.esp32c61]),
     pytest.param('memprot_esp32h2', marks=[pytest.mark.esp32h2]),
     pytest.param('memprot_esp32p4', marks=[pytest.mark.esp32p4])
 ]
@@ -660,6 +669,7 @@ CONFIGS_MEMPROT_FLASH_IDROM = [
 CONFIGS_MEMPROT_INVALID_REGION_PROTECTION_USING_PMA = [
     pytest.param('memprot_esp32c5', marks=[pytest.mark.esp32c5]),
     pytest.param('memprot_esp32c6', marks=[pytest.mark.esp32c6]),
+    pytest.param('memprot_esp32c61', marks=[pytest.mark.esp32c61]),
     pytest.param('memprot_esp32h2', marks=[pytest.mark.esp32h2]),
     pytest.param('memprot_esp32p4', marks=[pytest.mark.esp32p4])
 ]
@@ -698,7 +708,7 @@ def test_iram_reg1_write_violation(dut: PanicTestDut, test_func_name: str) -> No
         dut.expect_backtrace()
     elif dut.target == 'esp32c3':
         dut.expect_exact(r'Test error: Test function has returned')
-    elif dut.target in ['esp32c2', 'esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+    else:
         dut.expect_gme('Store access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -723,7 +733,7 @@ def test_iram_reg2_write_violation(dut: PanicTestDut, test_func_name: str) -> No
         dut.expect(r'  operation type: (\S+)')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
-    elif dut.target in ['esp32c2', 'esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+    else:
         dut.expect_gme('Store access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -748,7 +758,7 @@ def test_iram_reg3_write_violation(dut: PanicTestDut, test_func_name: str) -> No
         dut.expect(r'  operation type: (\S+)')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
-    elif dut.target in ['esp32c2', 'esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+    else:
         dut.expect_gme('Store access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -775,7 +785,7 @@ def test_iram_reg4_write_violation(dut: PanicTestDut, test_func_name: str) -> No
         dut.expect(r'  operation type: (\S+)')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
-    elif dut.target in ['esp32c2', 'esp32c6', 'eps32h2']:
+    else:
         dut.expect_gme('Store access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -794,8 +804,8 @@ def test_dram_reg1_execute_violation(dut: PanicTestDut, test_func_name: str) -> 
         dut.expect_gme('Memory protection fault')
         dut.expect(r'Unknown operation at address [0-9xa-f]+ not permitted \((\S+)\)')
         dut.expect_reg_dump(0)
-        dut.expect_corrupted_backtrace()
-    elif dut.target in ['esp32c3', 'esp32c2', 'esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+        dut.expect_backtrace(corrupted=True)
+    else:
         dut.expect_gme('Instruction access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -813,8 +823,8 @@ def test_dram_reg2_execute_violation(dut: PanicTestDut, test_func_name: str) -> 
     if dut.target == 'esp32s2':
         dut.expect_gme('InstructionFetchError')
         dut.expect_reg_dump(0)
-        dut.expect_corrupted_backtrace()
-    elif dut.target in ['esp32c3', 'esp32c2', 'esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+        dut.expect_backtrace(corrupted=True)
+    else:
         dut.expect_gme('Instruction access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -870,7 +880,7 @@ def test_rtc_fast_reg3_execute_violation(dut: PanicTestDut, test_func_name: str)
         dut.expect(r'  operation type: (\S+)')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
-    elif dut.target in ['esp32c5', 'esp32c6', 'esp32h2', 'esp32p4']:
+    else:
         dut.expect_gme('Instruction access fault')
         dut.expect_reg_dump(0)
         dut.expect_stack_dump()
@@ -885,7 +895,7 @@ def test_rtc_slow_reg1_execute_violation(dut: PanicTestDut, test_func_name: str)
     dut.expect_gme('Memory protection fault')
     dut.expect(r'Read operation at address [0-9xa-f]+ not permitted \((\S+)\)')
     dut.expect_reg_dump(0)
-    dut.expect_corrupted_backtrace()
+    dut.expect_backtrace(corrupted=True)
     dut.expect_cpu_reset()
 
 
@@ -896,7 +906,7 @@ def test_rtc_slow_reg2_execute_violation(dut: PanicTestDut, test_func_name: str)
     dut.expect_gme('Memory protection fault')
     dut.expect(r'Read operation at address [0-9xa-f]+ not permitted \((\S+)\)')
     dut.expect_reg_dump(0)
-    dut.expect_corrupted_backtrace()
+    dut.expect_backtrace(corrupted=True)
     dut.expect_cpu_reset()
 
 
@@ -951,15 +961,7 @@ def test_invalid_memory_region_execute_violation(dut: PanicTestDut, test_func_na
 def test_gdbstub_coredump(dut: PanicTestDut) -> None:
     test_func_name = 'test_storeprohibited'
     dut.run_test_func(test_func_name)
-
-    dut.process_coredump_uart()
-
-    dut.expect_exact('Entering gdb stub now.')
-    dut.start_gdb_for_gdbstub()
-    frames = dut.gdb_backtrace()
-    dut.verify_gdb_backtrace(frames, get_default_backtrace(test_func_name))
-    dut.revert_log_level()
-    return  # don't expect "Rebooting" output below
+    common_test(dut, 'gdbstub_coredump', get_default_backtrace(test_func_name))
 
 
 def test_hw_stack_guard_cpu(dut: PanicTestDut, cpu: int) -> None:
@@ -979,6 +981,7 @@ def test_hw_stack_guard_cpu(dut: PanicTestDut, cpu: int) -> None:
     assert end_addr > start_addr
 
 
+@pytest.mark.temp_skip_ci(targets=['esp32c5'], reason='TODO: IDF-8662')
 @pytest.mark.parametrize('config', CONFIGS_HW_STACK_GUARD, indirect=True)
 @pytest.mark.generic
 def test_hw_stack_guard_cpu0(dut: PanicTestDut, config: str, test_func_name: str) -> None:
@@ -987,6 +990,7 @@ def test_hw_stack_guard_cpu0(dut: PanicTestDut, config: str, test_func_name: str
     common_test(dut, config)
 
 
+@pytest.mark.temp_skip_ci(targets=['esp32c5'], reason='TODO: IDF-8662')
 @pytest.mark.parametrize('config', CONFIGS_HW_STACK_GUARD_DUAL_CORE, indirect=True)
 @pytest.mark.generic
 def test_hw_stack_guard_cpu1(dut: PanicTestDut, config: str, test_func_name: str) -> None:
@@ -1022,9 +1026,7 @@ def test_capture_dram(dut: PanicTestDut, config: str, test_func_name: str) -> No
     dut.expect_elf_sha256()
     dut.expect_none(['Guru Meditation', 'Re-entered core dump'])
 
-    dut.expect_exact('Save core dump to flash...')
-    dut.expect_exact('Core dump has been saved to flash.')
-    dut.expect('Rebooting...')
+    expect_coredump_flash_write_logs(dut, config)
 
     core_elf_file = dut.process_coredump_flash()
     dut.start_gdb_for_coredump(core_elf_file)
@@ -1077,7 +1079,7 @@ def test_tcb_corrupted(dut: PanicTestDut, target: str, config: str, test_func_na
     if dut.is_xtensa:
         dut.expect_gme('LoadProhibited')
         dut.expect_reg_dump(0)
-        dut.expect_corrupted_backtrace()
+        dut.expect_backtrace()
     else:
         dut.expect_gme('Load access fault')
         dut.expect_reg_dump(0)

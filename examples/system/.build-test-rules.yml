@@ -2,9 +2,9 @@
 
 examples/system/app_trace_basic:
   disable:
-    - if: IDF_TARGET in ["esp32c6", "esp32h2", "esp32p4", "esp32c5"]
+    - if: IDF_TARGET in ["esp32c6", "esp32h2", "esp32p4", "esp32c5", "esp32c61"]
       temporary: true
-      reason: target esp32c6, esp32h2, esp32p4, esp32c5 is not supported yet
+      reason: targets not supported yet, TODO[C61] IDF-9264 IDF-10992
 
 examples/system/base_mac_address:
   depends_components:
@@ -12,15 +12,8 @@ examples/system/base_mac_address:
 
 examples/system/console/advanced:
   disable_test:
-    - if: IDF_TARGET not in ["esp32", "esp32c3"]
+    - if: IDF_TARGET not in ["esp32", "esp32c3"] # IDF-9120 and IDF-9133
       reason: Sufficient to run this app on one chip with each architecture
-  depends_components:
-    - console
-    - vfs
-
-examples/system/console/advanced_usb_cdc:
-  disable:
-    - if: SOC_USB_OTG_SUPPORTED != 1 or IDF_TARGET == "esp32p4" # TODO: IDF-8078, IDF-9120 and IDF-9133
   depends_components:
     - console
     - vfs
@@ -39,9 +32,9 @@ examples/system/deep_sleep:
 
 examples/system/deep_sleep_wake_stub:
   disable:
-    - if: IDF_TARGET in ["esp32c2", "esp32p4", "esp32c61"]
+    - if: ESP_ROM_SUPPORT_DEEP_SLEEP_WAKEUP_STUB != 1
       temporary: true
-      reason: target(s) is not supported yet  # TODO: [esp32c61] IDF-9245
+      reason: target(s) is not supported yet
 
 examples/system/efuse:
   enable:
@@ -58,8 +51,6 @@ examples/system/efuse:
     - bootloader_support
 
 examples/system/esp_timer:
-  disable:
-    - if: SOC_LIGHT_SLEEP_SUPPORTED != 1
   depends_components:
     - esp_timer
 
@@ -121,10 +112,6 @@ examples/system/ipc/ipc_isr/riscv:
   enable:
     - if: IDF_TARGET_ARCH_RISCV == 1 and ESP_IPC_ISR_ENABLE == 1
       reason: The test is intended only for multi-core chips
-  disable_test:
-    - if: IDF_TARGET == "esp32p4"
-      temporary: true
-      reason: lack of runners
   depends_components:
     - esp_system
 
@@ -139,11 +126,16 @@ examples/system/light_sleep:
   disable:
     - if: SOC_LIGHT_SLEEP_SUPPORTED != 1
 
+examples/system/nmi_isr:
+  enable:
+    - if: IDF_TARGET_ARCH_XTENSA == 1
+      reason: test NMI for Xtensa targets only
+
 examples/system/ota/advanced_https_ota:
   disable:
-    - if: IDF_TARGET in ["esp32h2", "esp32c61"]
+    - if: IDF_TARGET in ["esp32h2"]
       temporary: true
-      reason: target esp32h2 esp32c61 is not supported yet
+      reason: target esp32h2 is not supported yet
   disable_test:
     - if: IDF_TARGET not in ["esp32", "esp32c3", "esp32s3"]
       temporary: true
@@ -161,9 +153,9 @@ examples/system/ota/advanced_https_ota:
 
 examples/system/ota/native_ota_example:
   disable:
-    - if: IDF_TARGET in ["esp32h2", "esp32c61"]
+    - if: IDF_TARGET in ["esp32h2"]
       temporary: true
-      reason: target esp32h2, esp32c61 is not supported yet
+      reason: target esp32h2 is not supported yet
   disable_test:
     - if: IDF_TARGET != "esp32"
       reason: Only esp32 has ethernet runners
@@ -178,19 +170,19 @@ examples/system/ota/native_ota_example:
 
 examples/system/ota/otatool:
   disable:
-    - if: IDF_TARGET in ["esp32h2", "esp32c61"]
+    - if: IDF_TARGET in ["esp32h2"]
       temporary: true
-      reason: target esp32h2, esp32c61 is not supported yet
+      reason: target esp32h2 is not supported yet
   disable_test:
-    - if: IDF_TARGET in ["esp32c5"]
-      reason: incomplete esptool support for esp32c5 # IDF-10915
+    - if: IDF_TARGET in ["esp32c61"]
+      reason: target esp32c61 is not supported yet
 
 
 examples/system/ota/pre_encrypted_ota:
   disable:
-    - if: IDF_TARGET in ["esp32h2", "esp32c61"]
+    - if: IDF_TARGET in ["esp32h2"]
       temporary: true
-      reason: target esp32h2, esp32c61 is not supported yet
+      reason: target esp32h2 is not supported yet
   disable_test:
     - if: IDF_TARGET != "esp32"
       temporary: true
@@ -206,9 +198,9 @@ examples/system/ota/pre_encrypted_ota:
 
 examples/system/ota/simple_ota_example:
   disable:
-    - if: IDF_TARGET in ["esp32h2", "esp32c61"]
+    - if: IDF_TARGET in ["esp32h2"]
       temporary: true
-      reason: target esp32h2, esp32c61 is not supported yet
+      reason: target esp32h2 is not supported yet
     - if: CONFIG_NAME == "spiram" and SOC_SPIRAM_SUPPORTED != 1
   disable_test:
     - if: IDF_TARGET not in ["esp32", "esp32c3", "esp32s3"]
@@ -283,6 +275,12 @@ examples/system/ulp/lp_core/build_system:
   depends_components:
     - ulp
 
+examples/system/ulp/lp_core/debugging:
+  enable:
+    - if: SOC_LP_CORE_SUPPORTED == 1
+  depends_components:
+    - ulp
+
 examples/system/ulp/lp_core/gpio:
   disable:
     - if: SOC_DEEP_SLEEP_SUPPORTED != 1
@@ -301,11 +299,23 @@ examples/system/ulp/lp_core/gpio_intr_pulse_counter:
   depends_components:
     - ulp
 
+examples/system/ulp/lp_core/inter_cpu_critical_section/:
+  enable:
+    - if: SOC_LP_CORE_SUPPORTED == 1
+  depends_components:
+    - ulp
+
 examples/system/ulp/lp_core/interrupt:
   enable:
     - if: SOC_LP_CORE_SUPPORTED == 1
   depends_components:
     - ulp
+
+examples/system/ulp/lp_core/lp_adc:
+  disable:
+    - if: (SOC_LP_ADC_SUPPORTED != 1)
+  depends_components:
+    - ulp, esp_adc
 
 examples/system/ulp/lp_core/lp_i2c:
   enable:

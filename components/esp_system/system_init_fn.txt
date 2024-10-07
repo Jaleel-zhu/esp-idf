@@ -82,10 +82,12 @@ SECONDARY: 103: esp_security_init in components/esp_security/src/init.c on BIT(0
 SECONDARY: 105: esp_sleep_startup_init in components/esp_hw_support/sleep_gpio.c on BIT(0)
 SECONDARY: 106: sleep_clock_startup_init in components/esp_hw_support/lowpower/port/esp32c5/sleep_clock.c on BIT(0)
 SECONDARY: 106: sleep_clock_startup_init in components/esp_hw_support/lowpower/port/esp32c6/sleep_clock.c on BIT(0)
+SECONDARY: 106: sleep_clock_startup_init in components/esp_hw_support/lowpower/port/esp32c61/sleep_clock.c on BIT(0)
 SECONDARY: 106: sleep_clock_startup_init in components/esp_hw_support/lowpower/port/esp32h2/sleep_clock.c on BIT(0)
 SECONDARY: 106: sleep_clock_startup_init in components/esp_hw_support/lowpower/port/esp32p4/sleep_clock.c on BIT(0)
 SECONDARY: 107: sleep_sys_periph_startup_init in components/esp_hw_support/sleep_system_peripheral.c on BIT(0)
 SECONDARY: 108: sleep_mmu_startup_init in components/esp_hw_support/lowpower/port/esp32c5/sleep_mmu.c on BIT(0)
+SECONDARY: 108: sleep_mmu_startup_init in components/esp_hw_support/lowpower/port/esp32c61/sleep_mmu.c on BIT(0)
 
 # app_trace has to be initialized before systemview
 SECONDARY: 115: esp_apptrace_init in components/app_trace/app_trace.c on ESP_SYSTEM_INIT_ALL_CORES
@@ -96,6 +98,10 @@ SECONDARY: 130: init_coredump in components/espcoredump/src/core_dump_init.c on 
 
 # esp_debug_stubs doesn't have init dependencies
 SECONDARY: 140: init_dbg_stubs in components/app_trace/debug_stubs.c on BIT(0)
+
+# Register NVS Encryption schemes
+SECONDARY: 150: nvs_sec_provider_register_flash_enc_scheme in components/nvs_sec_provider/nvs_sec_provider.c on BIT(0)
+SECONDARY: 151: nvs_sec_provider_register_hmac_scheme in components/nvs_sec_provider/nvs_sec_provider.c on BIT(0)
 
 # the rest of the components which are initialized from startup_funcs.c
 # [refactor-todo]: move init calls into respective components

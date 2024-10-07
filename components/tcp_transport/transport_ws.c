@@ -285,7 +285,7 @@ static int ws_connect(esp_transport_handle_t t, const char *host, int port, int 
     }
     int header_len = 0;
     do {
-        if ((len = esp_transport_read(ws->parent, ws->buffer + header_len, WS_BUFFER_SIZE - header_len, timeout_ms)) <= 0) {
+        if ((len = esp_transport_read(ws->parent, ws->buffer + header_len, WS_BUFFER_SIZE - 1 - header_len, timeout_ms)) <= 0) {
             ESP_LOGE(TAG, "Error read response for Upgrade header %s", ws->buffer);
             return -1;
         }
@@ -504,7 +504,7 @@ static int ws_read_header(esp_transport_handle_t t, char *buffer, int len, int t
             ESP_LOGE(TAG, "Error read data");
             return rlen;
         }
-        payload_len = data_ptr[0] << 8 | data_ptr[1];
+        payload_len = (uint8_t)data_ptr[0] << 8 | (uint8_t)data_ptr[1];
     } else if (payload_len == 127) {
         // headerLen += 8;
         header = 8;
@@ -517,7 +517,7 @@ static int ws_read_header(esp_transport_handle_t t, char *buffer, int len, int t
             // really too big!
             payload_len = 0xFFFFFFFF;
         } else {
-            payload_len = data_ptr[4] << 24 | data_ptr[5] << 16 | data_ptr[6] << 8 | data_ptr[7];
+            payload_len = (uint8_t)data_ptr[4] << 24 | (uint8_t)data_ptr[5] << 16 | (uint8_t)data_ptr[6] << 8 | data_ptr[7];
         }
     }
 

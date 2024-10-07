@@ -71,10 +71,6 @@
 #include "soc/hp_sys_clkrst_reg.h"
 #endif
 
-#if SOC_KEY_MANAGER_SUPPORTED
-#include "hal/key_mgr_hal.h"
-#endif
-
 #include "esp_private/rtc_clk.h"
 
 #if SOC_INT_CLIC_SUPPORTED
@@ -136,10 +132,19 @@ extern int _rtc_bss_end;
 extern int _bss_bt_start;
 extern int _bss_bt_end;
 #endif // CONFIG_BT_LE_RELEASE_IRAM_SUPPORTED
-extern int _instruction_reserved_start;
-extern int _instruction_reserved_end;
-extern int _rodata_reserved_start;
-extern int _rodata_reserved_end;
+
+/**
+ * If using `int`, then for CLANG, with enabled optimization when inlined function is provided with the address of external symbol, the two least bits of the constant used inside that function get cleared.
+ * Optimizer assumes that address of external symbol should be aligned to 4-bytes and therefore aligns constant value used for bitwise AND operation with that address.
+ *
+ * This means `extern int _instruction_reserved_start;` can be unaligned to 4 bytes, whereas using `char` can solve this issue.
+ *
+ * As we only use these symbol address, we declare them as `char` here
+ */
+extern char _instruction_reserved_start;
+extern char _instruction_reserved_end;
+extern char _rodata_reserved_start;
+extern char _rodata_reserved_end;
 
 extern int _vector_table;
 #if SOC_INT_CLIC_SUPPORTED
@@ -228,7 +233,8 @@ void IRAM_ATTR call_start_cpu1(void)
     DPORT_REG_SET_BIT(DPORT_APP_CPU_RECORD_CTRL_REG, DPORT_APP_CPU_PDEBUG_ENABLE | DPORT_APP_CPU_RECORD_ENABLE);
     DPORT_REG_CLR_BIT(DPORT_APP_CPU_RECORD_CTRL_REG, DPORT_APP_CPU_RECORD_ENABLE);
 #elif CONFIG_IDF_TARGET_ESP32P4
-    //TODO: IDF-7688
+    REG_SET_BIT(ASSIST_DEBUG_CORE_1_RCD_EN_REG, ASSIST_DEBUG_CORE_1_RCD_PDEBUGEN);
+    REG_SET_BIT(ASSIST_DEBUG_CORE_1_RCD_EN_REG, ASSIST_DEBUG_CORE_1_RCD_RECORDEN);
 #else
     REG_WRITE(ASSIST_DEBUG_CORE_1_RCD_PDEBUGENABLE_REG, 1);
     REG_WRITE(ASSIST_DEBUG_CORE_1_RCD_RECORDING_REG, 1);
@@ -309,13 +315,6 @@ static void start_other_core(void)
     }
 #endif
 
-#if SOC_KEY_MANAGER_SUPPORTED
-    // The following operation makes the Key Manager to use eFuse key for ECDSA and XTS-AES operation by default
-    // This is to keep the default behavior same as the other chips
-    // If the Key Manager configuration is already locked then following operation does not have any effect
-    key_mgr_hal_set_key_usage(ESP_KEY_MGR_ECDSA_KEY, ESP_KEY_MGR_USE_EFUSE_KEY);
-    key_mgr_hal_set_key_usage(ESP_KEY_MGR_XTS_AES_128_KEY, ESP_KEY_MGR_USE_EFUSE_KEY);
-#endif
     ets_set_appcpu_boot_addr((uint32_t)call_start_cpu1);
 
     bool cpus_up = false;
@@ -732,7 +731,7 @@ void IRAM_ATTR call_start_cpu0(void)
 #endif
 #endif
 
-#if SOC_DEEP_SLEEP_SUPPORTED //TODO: IDF-9245
+#if SOC_DEEP_SLEEP_SUPPORTED
     // Need to unhold the IOs that were hold right before entering deep sleep, which are used as wakeup pins
     if (rst_reas[0] == RESET_REASON_CORE_DEEP_SLEEP) {
         esp_deep_sleep_wakeup_io_reset();

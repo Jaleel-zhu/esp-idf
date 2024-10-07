@@ -451,6 +451,10 @@ config SOC_GDMA_SUPPORT_ETM
     bool
     default y
 
+config SOC_GDMA_SUPPORT_SLEEP_RETENTION
+    bool
+    default y
+
 config SOC_ETM_GROUPS
     int
     default 1
@@ -671,6 +675,10 @@ config SOC_I2S_TDM_FULL_DATA_WIDTH
     bool
     default y
 
+config SOC_I2S_SUPPORT_SLEEP_RETENTION
+    bool
+    default y
+
 config SOC_LEDC_SUPPORT_PLL_DIV_CLOCK
     bool
     default y
@@ -792,6 +800,10 @@ config SOC_RMT_SUPPORT_TX_CARRIER_DATA_ONLY
     default y
 
 config SOC_RMT_SUPPORT_XTAL
+    bool
+    default y
+
+config SOC_RMT_SUPPORT_SLEEP_RETENTION
     bool
     default y
 
@@ -935,6 +947,10 @@ config SOC_SHA_SUPPORT_SHA256
     bool
     default y
 
+config SOC_ECC_CONSTANT_TIME_POINT_MUL
+    bool
+    default y
+
 config SOC_ECDSA_SUPPORT_EXPORT_PUBKEY
     bool
     default y
@@ -1006,6 +1022,38 @@ config SOC_MEMSPI_IS_INDEPENDENT
 config SOC_SPI_MAX_PRE_DIVIDER
     int
     default 16
+
+config SOC_SPIRAM_XIP_SUPPORTED
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_AUTO_WAIT_IDLE
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_AUTO_SUSPEND
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_AUTO_RESUME
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_IDLE_INTR
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_SW_SUSPEND
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_CHECK_SUS
+    bool
+    default y
+
+config SOC_SPI_MEM_SUPPORT_WRAP
+    bool
+    default y
 
 config SOC_MEMSPI_SRC_FREQ_80M_SUPPORTED
     bool
@@ -1203,9 +1251,29 @@ config SOC_COEX_HW_PTI
     bool
     default y
 
+config SOC_EXTERNAL_COEX_ADVANCE
+    bool
+    default y
+
+config SOC_EXTERNAL_COEX_LEADER_TX_LINE
+    bool
+    default n
+
 config SOC_WIFI_LIGHT_SLEEP_CLK_WIDTH
     int
     default 12
+
+config SOC_PM_SUPPORT_WIFI_WAKEUP
+    bool
+    default y
+
+config SOC_PM_SUPPORT_BEACON_WAKEUP
+    bool
+    default y
+
+config SOC_PM_SUPPORT_BT_WAKEUP
+    bool
+    default y
 
 config SOC_PM_SUPPORT_EXT1_WAKEUP
     bool
@@ -1247,7 +1315,15 @@ config SOC_PM_SUPPORT_HP_AON_PD
     bool
     default y
 
+config SOC_PM_SUPPORT_MAC_BB_PD
+    bool
+    default y
+
 config SOC_PM_SUPPORT_RTC_PERIPH_PD
+    bool
+    default y
+
+config SOC_PM_SUPPORT_PMU_MODEM_STATE
     bool
     default y
 
@@ -1279,6 +1355,10 @@ config SOC_PM_PAU_REGDMA_LINK_CONFIGURABLE
     bool
     default y
 
+config SOC_PM_PAU_REGDMA_LINK_IDX_WIFIMAC
+    int
+    default 4
+
 config SOC_PM_PAU_REGDMA_UPDATE_CACHE_BEFORE_WAIT_COMPARE
     bool
     default y
@@ -1300,10 +1380,6 @@ config SOC_CLK_OSC_SLOW_SUPPORTED
     default y
 
 config SOC_CLK_LP_FAST_SUPPORT_XTAL
-    bool
-    default y
-
-config SOC_CLK_RC32K_NOT_TO_USE
     bool
     default y
 
@@ -1351,9 +1427,13 @@ config SOC_WIFI_HE_SUPPORT
     bool
     default y
 
-config SOC_WIFI_HE_SUPPORT_5G
+config SOC_WIFI_SUPPORT_5G
     bool
     default y
+
+config SOC_WIFI_MAC_VERSION_NUM
+    int
+    default 3
 
 config SOC_BLE_SUPPORTED
     bool

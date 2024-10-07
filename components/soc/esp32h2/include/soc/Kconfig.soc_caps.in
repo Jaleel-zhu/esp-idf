@@ -547,10 +547,6 @@ config SOC_RTCIO_HOLD_SUPPORTED
     bool
     default y
 
-config SOC_RTCIO_VALID_RTCIO_MASK
-    hex
-    default 0x7F80
-
 config SOC_DEDIC_GPIO_OUT_CHANNELS_NUM
     int
     default 8
@@ -676,6 +672,10 @@ config SOC_I2S_SUPPORTS_TDM
     default y
 
 config SOC_I2S_TDM_FULL_DATA_WIDTH
+    bool
+    default y
+
+config SOC_I2S_SUPPORT_SLEEP_RETENTION
     bool
     default y
 

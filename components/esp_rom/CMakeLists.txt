@@ -67,6 +67,10 @@ if(CONFIG_ESP_ROM_HAS_FLASH_COUNT_PAGES_BUG OR CONFIG_ESP_ROM_HAS_CACHE_WRITEBAC
     list(APPEND sources "patches/esp_rom_cache_esp32s2_esp32s3.c")
 endif()
 
+if(CONFIG_ESP_ROM_CACHE_WB_INVLD_LOW_RANGE)
+    list(APPEND sources "patches/esp_rom_cache_esp32c61.c")
+endif()
+
 if(CONFIG_ESP_ROM_HAS_CACHE_WRITEBACK_BUG)
     list(APPEND sources "patches/esp_rom_cache_writeback_esp32s3.S")
 endif()
@@ -166,6 +170,11 @@ else() # Regular app build
         # For ESP32S2, inclusion of ROM driver do not depend on CONFIG_SPI_FLASH_ROM_IMPL
         rom_linker_script("spiflash_legacy")
 
+    elseif(target STREQUAL "esp32c2")
+        if(CONFIG_ESP32C2_REV_MIN_FULL GREATER_EQUAL 200)
+            rom_linker_script("eco4")
+        endif()
+
     elseif(target STREQUAL "esp32c3")
 
         if(CONFIG_ESP32C3_REV_MIN_FULL GREATER_EQUAL 3)
@@ -186,6 +195,13 @@ else() # Regular app build
     elseif(target STREQUAL "esp32c5")
         # esp32c5.rom.api.ld has been split to several lds by components.
         # esp32c5.rom.api.ld is still reserved to map the APIs
+        rom_linker_script("phy")
+        rom_linker_script("coexist")
+        rom_linker_script("net80211")
+        rom_linker_script("pp")
+    elseif(target STREQUAL "esp32c61")
+        # esp32c61.rom.api.ld has been split to several lds by components.
+        # esp32c61.rom.api.ld is still reserved to map the APIs
         rom_linker_script("phy")
         rom_linker_script("coexist")
         rom_linker_script("net80211")
@@ -235,6 +251,10 @@ else() # Regular app build
 
     if(CONFIG_MBEDTLS_USE_CRYPTO_ROM_IMPL)
         rom_linker_script("mbedtls")
+        # For ESP32C2(ECO4), mbedTLS in ROM has been updated to v3.6.0-LTS
+        if(CONFIG_ESP32C2_REV_MIN_FULL GREATER_EQUAL 200)
+            rom_linker_script("mbedtls.eco4")
+        endif()
     endif()
 
     if(CONFIG_IDF_TARGET_ARCH_XTENSA)

@@ -17,6 +17,10 @@ if(${target} STREQUAL "esp32c6")
     list(APPEND priv_requires hal)
 endif()
 
+if(CONFIG_RTC_CLK_SRC_INT_RC32K)
+    message(WARNING "Internal RC32K clock is unstable at extreme temperatures and is not recommended for use.")
+endif()
+
 set(srcs "cpu.c" "port/${IDF_TARGET}/esp_cpu_intr.c" "esp_memory_utils.c" "port/${IDF_TARGET}/cpu_region_protect.c")
 if(NOT BOOTLOADER_BUILD)
     list(APPEND srcs "esp_clk.c"
@@ -69,7 +73,7 @@ if(NOT BOOTLOADER_BUILD)
 
     if(CONFIG_SOC_GDMA_SUPPORTED)
         list(APPEND srcs "dma/gdma.c" "deprecated/gdma_legacy.c")
-        if(CONFIG_SOC_GDMA_SUPPORT_SLEEP_RETENTION)
+        if(CONFIG_SOC_GDMA_SUPPORT_SLEEP_RETENTION AND CONFIG_SOC_PAU_SUPPORTED)
             list(APPEND srcs "dma/gdma_sleep_retention.c")
         endif()
         if(CONFIG_SOC_GDMA_SUPPORT_ETM)
@@ -139,16 +143,6 @@ if(NOT BOOTLOADER_BUILD)
 
     if(CONFIG_SOC_GPIO_CLOCKOUT_BY_GPIO_MATRIX OR CONFIG_SOC_GPIO_CLOCKOUT_BY_IO_MUX)
         list(APPEND srcs "esp_clock_output.c")
-    endif()
-
-    if(CONFIG_IDF_TARGET_ESP32C61)  # TODO: [ESP32C61] IDF-9245, IDF-9247, IDF-9248
-        list(REMOVE_ITEM srcs
-                "sleep_cpu.c"
-                "sleep_modem.c"
-                "sleep_modes.c"
-                "sleep_wake_stub.c"
-                "sleep_gpio.c"
-            )
     endif()
 else()
     # Requires "_esp_error_check_failed()" function

@@ -64,8 +64,8 @@ extern "C" {
 #define RTC_ENTRY_ADDR_REG                  LP_AON_STORE6_REG
 #define RTC_RESET_CAUSE_REG                 LP_AON_STORE6_REG
 #define RTC_MEMORY_CRC_REG                  LP_AON_STORE7_REG
-#define LIGHT_SLEEP_WAKE_STUB_ADDR_REG      LP_AON_STORE8_REG
-#define SLEEP_MODE_REG                      LP_AON_STORE9_REG
+#define RTC_SLEEP_WAKE_STUB_ADDR_REG        LP_AON_STORE8_REG
+#define RTC_SLEEP_MODE_REG                  LP_AON_STORE8_REG
 
 #define RTC_DISABLE_ROM_LOG ((1 << 0) | (1 << 16)) //!< Disable logging from the ROM code.
 
@@ -94,6 +94,8 @@ typedef enum {
     USB_UART_CHIP_RESET    = 21,    /**<21, usb uart reset digital core (hp system)*/
     USB_JTAG_CHIP_RESET    = 22,    /**<22, usb jtag reset digital core (hp system)*/
     JTAG_RESET             = 24,    /**<24, jtag reset CPU*/
+    RTC_PWR_GLITCH_RESET   = 25,    /**<25, RTC power glitch reset system*/
+    CPU_LOCKUP_RESET       = 26,    /**<26, cpu lockup reset*/
 } RESET_REASON;
 
 // Check if the reset reason defined in ROM is compatible with soc/reset_reasons.h
@@ -114,6 +116,8 @@ ESP_STATIC_ASSERT((soc_reset_reason_t)EFUSE_RESET == RESET_REASON_CORE_EFUSE_CRC
 ESP_STATIC_ASSERT((soc_reset_reason_t)USB_UART_CHIP_RESET == RESET_REASON_CORE_USB_UART, "USB_UART_CHIP_RESET != RESET_REASON_CORE_USB_UART");
 ESP_STATIC_ASSERT((soc_reset_reason_t)USB_JTAG_CHIP_RESET == RESET_REASON_CORE_USB_JTAG, "USB_JTAG_CHIP_RESET != RESET_REASON_CORE_USB_JTAG");
 ESP_STATIC_ASSERT((soc_reset_reason_t)JTAG_RESET == RESET_REASON_CPU0_JTAG, "JTAG_RESET != RESET_REASON_CPU0_JTAG");
+ESP_STATIC_ASSERT((soc_reset_reason_t)RTC_PWR_GLITCH_RESET == RESET_REASON_RTC_BROWN_OUT, "RTC_PWR_GLITCH_RESET != RESET_REASON_RTC_BROWN_OUT");
+ESP_STATIC_ASSERT((soc_reset_reason_t)CPU_LOCKUP_RESET == RESET_REASON_CPU_LOCKUP, "CPU_LOCKUP_RESET != RESET_REASON_CPU_LOCKUP");
 
 typedef enum {
     NO_SLEEP        = 0,
